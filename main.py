@@ -1,38 +1,91 @@
 #!/usr/bin/env python
 #
-# El siguiente programa permite obtener algunos valores referentes al estado de un 
-# sistema operativo Linux.
+# El siguiente programa permite obtener, via web services, algunos valores 
+# referentes al estado de un servidor con sistema operativo Linux.
 #  
-# El proposito es que usted haga una especie de "llene los espacios en blanco" 
-# para que se vaya familiarizando con la forma como se desarrollan los Web 
-# Services.
-#  
+# El codigo presenta algunas partes ya codificadas y que le serviran a usted
+# para:
+#
+# 1- Identificar cuales son las partes del codigo que debe integrar
+# 2- Tener una guia de como desarrollar sus propios web services
+#
+# NOTA: No usar las funciones 'os.system' o 'os.spawn' ya que son funciones
+# que pueden llevar a vulnerabilidades dentro del codigo.
+# REF: https://raspberrypi.stackexchange.com/questions/17017/how-do-i-run-a-command-line-command-in-a-python-script
+#
 # Author: 
 # Date:
 #
 
 # Librerias que se requieren para correr la aplicacion
-from flask import Flask, jsonify, make_response
+from flask import Flask, jsonify, abort, make_response, request
 import subprocess
 
 # Se crea un objeto de tipo Flask llamado 'app'
 app = Flask(__name__)
 
 #
-# Modifique este metodo de modo que cuando el usuario acceda a cualquiera de 
-# las rutas aqui definidas le aparezca un mensaje donde se indica los posibles
-# servicios que puede consumir
+# A continuacion se ejemplificaran algunos 'end points' del web service que 
+# representa a un servidor.
 #
-@app.route('/')
-@app.route('/index.htm')
-@app.route('/index.html')
-def index():
-	#
-	# Almacene en una variable llamada 'output' un mensaje que describa 
-        # todos los web services definidos en este programa
-	#
-	return output
+# ---------------------------------------------------------------------------
+#
+# +------------+
+# | EJEMPLO 01 |
+# +------------+ |
+#   +------------+ 
+#
+# Metodo usado para determinar el uso de memoria usando el aplicativo 'vmstat'
+#
+# Posibles metodos de acceso
+#
+# curl http://localhost:5000/mem/swpd
+# curl http://localhost:5000/mem/free
+# curl http://localhost:5000/mem/buff
+# curl http://localhost:5000/mem/cache
+#
+@app.route('/mem/<string:param>', methods = ['GET'])
+def mem(param):
+  if (param == "swpd"):
+    value = "4"
+  elif (param == "free"):
+    value = "5"
+  elif (param == "buff"):
+    value = "6"
+  elif (param == "cache"):
+    value = "7"
+  else:
+    return make_response(jsonify({'error': 'Possible values swpd, free, buff, cache'}), 404)
+  vmstat = subprocess.Popen(['vmstat'], stdout = subprocess.PIPE)
+  tail = subprocess.Popen(['tail','-n','+3'], stdin = vmstat.stdout, stdout = subprocess.PIPE)
+  tr = subprocess.Popen(['tr', '-s', ' '], stdin = tail.stdout, stdout = subprocess.PIPE)
+  
+  output = subprocess.check_output(['cut', '-d', ' ', '-f', value], stdin = tr.stdout)
+  return jsonify({'mem %s' % param: output})
 
+#
+# +------------+
+# | EJEMPLO 02 |-+
+# +------------+ |
+#   +------------+ 
+#
+# El mismo metodo anterior pero usando el metodo 'POST' del protocolo HTTP
+#
+# Para probar este comando se puede invocar el siguiente comando:
+#
+# curl -X POST -H "Content-type: application/json" -d '{"mem": "cache" }' http://localhost:5000/mem
+#
+# 
+@app.route('/mem', methods = ['POST'])
+def memp():
+  if not request.json or not 'mem' in request.json:
+    abort(404)
+  return mem(request.json['mem'])
+#
+# +------------+
+# | EJEMPLO 03 |
+# +------------+ |
+#   +------------+ 
 #
 # Este metodo se usa para determinar que personas estan conectadas usando el 
 # comando 'who'. Si usted no sabe como funciona el comando 'who', por favor
@@ -52,13 +105,86 @@ def index():
 #
 # curl http://localhost:5000/who
 #
+#
 @app.route('/who',methods = ['GET'])
 def who():
-	who = subprocess.Popen(['who'], stdout = subprocess.PIPE)
-	cut = subprocess.Popen(['cut', '-d', ' ', '-f', '1'], stdin = who.stdout, stdout = subprocess.PIPE)
-	output = subprocess.check_output(('uniq'), stdin = cut.stdout)
-	return jsonify({'users': output})
+  who = subprocess.Popen(['who'], stdout = subprocess.PIPE)
+  cut = subprocess.Popen(['cut', '-d', ' ', '-f', '1'], stdin = who.stdout, stdout = subprocess.PIPE)
+  output = subprocess.check_output(('uniq'), stdin = cut.stdout)
+  return jsonify({'users': output})
 
+#
+# 
+# +------------+
+# | EJEMPLO 04 |-+
+# +------------+ |
+#   +------------+ 
+#
+# Web service que entrega informacion relativa a esta maquina
+#
+# curl http://localhost:5000/os
+#
+@app.route('/os',methods=['GET'])
+def os():
+  kernel = subprocess.check_output(['uname','-s'])
+  release = subprocess.check_output(['uname','-r'])
+  nodename = subprocess.check_output(['uname','-n'])
+  kernelv = subprocess.check_output(['uname','-v'])
+  machine = subprocess.check_output(['uname','-m'])
+  processor = subprocess.check_output(['uname','-p'])
+  os = subprocess.check_output(['uname','-o'])
+  hardware = subprocess.check_output(['uname','-i'])
+  return jsonify({'kernel': kernel, 
+    'release': release,
+    'node_name': nodename,
+    'kernel_version': kernelv,
+    'machine': machine,
+    'processor': processor,
+    'operating_system': os,
+    'hardware_platform': hardware})
+#
+# 
+# +---------------------+
+# | FIN DE LOS EJEMPLOS |
+# +---------------------+ |
+#   +---------------------+ 
+#
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+#
+#
+# --->    EJERCICIOS PROPUESTOS    <---
+# 
+# +--------------+
+# | EJERCICIO 01 |-+
+# +--------------+ |
+#   +--------------+ 
+#
+#
+# Modifique este metodo de modo que cuando el usuario acceda a cualquiera de 
+# las rutas aqui definidas le aparezca un mensaje donde se indica los posibles
+# servicios que puede consumir
+#
+# curl http://localhost:5000
+# curl http://localhost:5000/index.htm
+# curl http://localhost:5000/index.html
+#
+@app.route('/')
+@app.route('/index.htm')
+@app.route('/index.html')
+def index():
+  #
+  # Almacene en una variable llamada 'output' un mensaje que describa 
+  # todos los web services definidos en este programa
+  #
+  return jsonify({'available services': output})
+
+
+# 
+# +--------------+
+# | EJERCICIO 02 |-+
+# +--------------+ |
+#   +--------------+ 
 #
 # Este metodo permite determinar si un usuario en particular esta conectado. 
 # El comando usado en el shell para esta tarea es:
@@ -74,15 +200,40 @@ def who():
 #
 @app.route('/who/<string:user>',methods = ['GET'])
 def whou(user):
-	#
-	# Escriba aqui su codigo. El nombre del usuario que desea buscar se
-	# encuentra definido en la variable 'user'.
-	#
-	# Tenga en cuenta que el resultado de la ejecucion del comando debe 
-	# quedar en la variable 'output'
-	#
-	return jsonify({'loggedin': output})
+  #
+  # Escriba aqui su codigo. El nombre del usuario que desea buscar se
+  # encuentra definido en la variable 'user'.
+  #
+  # Tenga en cuenta que el resultado de la ejecucion del comando debe 
+  # quedar en la variable 'output'
+  #
+  return jsonify({'loggedin': output})
 
+#
+# 
+# +--------------+
+# | EJERCICIO 03 |-+
+# +--------------+ |
+#   +--------------+ 
+#
+# Desarrolle la version 'POST' del comando anterior. Es decir, que el web 
+# service responda ante un comando como el siguiente:
+#
+# curl -X POST -H "Content-type: application/json" -d '{ "user": "john" }' \ 
+# http://localhost:5000/who
+#
+# y determine si el usuario esta o no en el sistema
+#
+# RESTRICCION: Debe usar el metodo 'whou' del punto anterior en su implementacion
+#
+# SU CODIGO AQUI
+#
+
+# 
+# +--------------+
+# | EJERCICIO 04 |-+
+# +--------------+ |
+#   +--------------+ 
 #
 # Este metodo es usado para determinar el uso de la CPU. Para ello se utiliza 
 # el comando 'vmstat'. Abra una terminal y ejecute dicho comando.
@@ -115,49 +266,34 @@ def whou(user):
 #
 # Entones, la variable 'param' puede tener el valor 'us', 'sy', 'id', 'wa' o 'st'
 #
+# IMPORTANTE
+#
+# Si el valor en 'param' no es ninguno de los valores anteriores enviar un 
+# mensaje de error.
+#
 @app.route('/cpu/<string:param>', methods = ['GET'])
 def cpuwa(param):
-	#
-	# Escriba aqui su codigo. El tipo de valor de la CPU se encuentra 
-	# definido en la variable 'param'.
-	#
-	# Tenga en cuenta que el resultado de la ejecucion del comando debe 
-	# quedar en la variable 'output'
-	#
-	return jsonify({'cpu %s' % param: output})
+  #
+  # Escriba aqui su codigo. El tipo de valor de la CPU que se quiere 
+  # acceder se encuentra definido en la variable 'param'.
+  #
+  return jsonify({'param': 'valor_encontrado_aqui'})
 
 #
-# Otros web services ya implementados
+# 
+# +--------------+
+# | EJERCICIO 05 |-+
+# +--------------+ |
+#   +--------------+ 
 #
-# Web service que entrega informacion relativa a esta maquina
+# El 'EJEMPLO 04' muestra diferentes datos respecto al SO del servidor
 #
-# Metodo de acceso 
+# Escriba un 'end point' que se pueda acceder via el metodo 'POST' y que 
+# se invoque via curl de la siguiente forma
 #
-# curl http://localhost:5000/os
+# curl -X POST -H "Content-type: application/json" -d '{"feature": valor }' http://localhost:5000/os
 #
-@app.route('/os',methods=['GET'])
-def os():
-	kernel = subprocess.check_output(['uname','-s'])
-	release = subprocess.check_output(['uname','-r'])
-	nodename = subprocess.check_output(['uname','-n'])
-	kernelv = subprocess.check_output(['uname','-v'])
-	machine = subprocess.check_output(['uname','-m'])
-	processor = subprocess.check_output(['uname','-p'])
-	os = subprocess.check_output(['uname','-o'])
-	hardware = subprocess.check_output(['uname','-i'])
-	return jsonify({'kernel': kernel, 
-			'release': release,
-			'node_name': nodename,
-			'kernel_version': kernelv,
-			'machine': machine,
-			'processor': processor,
-			'operating_system': os,
-			'hardware_platform': hardware})
-
-#
-# Funcion que recupera informacion relativa a un parametro especifico del host
-#
-# Posibles valores
+# donde 'valor' puede tomar los siguientes valores
 #
 # - kernel
 # - release
@@ -168,70 +304,78 @@ def os():
 # - operatingsystem
 # - hardware
 #
-# Metodo de acceso
-# curl http://localhost:5000/os/kernel
-# curl http://localhost:5000/os/release
-# curl http://localhost:5000/os/nodename
-# curl http://localhost:5000/os/kernelversion
-# curl http://localhost:5000/os/machine
-# curl http://localhost:5000/os/processor
-# curl http://localhost:5000/os/operatingsystem
-# curl http://localhost:5000/os/hardware
+# Use el comando 'uname -a' para encontrar los valores que puede solicitar el
+# usuario.
 #
-@app.route('/os/<string:param>',methods=['GET'])
-def osp(param):
-	key = param
-	value = ""
-	if (param == "kernel"):
-		value = subprocess.check_output(['uname','-s']) 
-	elif (param == "release"):
-		value = subprocess.check_output(['uname','-r']) 
-	elif (param == "nodename"):
-		value = subprocess.check_output(['uname','-n']) 
-	elif (param == "kernelversion"):
-		value = subprocess.check_output(['uname','-v']) 
-	elif (param == "machine"):
-		value = subprocess.check_output(['uname','-m']) 
-	elif (param == "processor"):
-		value = subprocess.check_output(['uname','-p']) 
-	elif (param == "operatingsystem"):
-		value = subprocess.check_output(['uname','-o']) 
-	elif (param == "hardware"):
-		value = subprocess.check_output(['uname','-i']) 
-	else:
-		return make_response(jsonify({'error': 'Bad parameter. Valid parameters: \'kernel\', \'release\' \'nodename\' \'kernelversion\' \'machine\' \'processor\' \'operatingsystem\' \'hardware\''}), 404)
-
-	return jsonify({key: value})
+# Si el usuario digita este comando:
+#
+# curl -X POST -H "Content/type: application/json" -d '{ "feature": "kernel" }' http://localhost:5000/os
+#
+# La respuesta debe ser en formato JSON y algo como lo siguiente:
+#
+# {
+#   "kernel": "Linux\n"
+# }
+#
+# Si la caracteristica indicada no se encuentra disponible 
+#
+# SU CODIGO AQUI
 
 #
-# Metodo usado para determinar el uso de memoria. 
+# 
+# +--------------+
+# | EJERCICIO 06 |-+
+# +--------------+ |
+#   +--------------+ 
 #
-# Posibles metodos de acceso
+# Defina un 'end point' de modo que el usuario pueda llevar a cabo la
+# siguiente consulta:
 #
-# curl http://localhost:5000/mem/swpd
-# curl http://localhost:5000/mem/free
-# curl http://localhost:5000/mem/buff
-# curl http://localhost:5000/mem/cache
+# curl -X POST -H "Content-type: application/json" -d '{ "partition": "" }' http://localhost:5000/partition
 #
-@app.route('/mem/<string:param>', methods = ['GET'])
-def mem(param):
-	vmstat = subprocess.Popen(['vmstat'], stdout = subprocess.PIPE)
-	tail = subprocess.Popen(['tail','-n','+3'], stdin = vmstat.stdout, stdout = subprocess.PIPE)
-	tr = subprocess.Popen(['tr', '-s', ' '], stdin = tail.stdout, stdout = subprocess.PIPE)
-	if (param == "swpd"):
-		value = "4"
-	elif (param == "free"):
-		value = "5"
-	elif (param == "buff"):
-		value = "6"
-	elif (param == "cache"):
-		value = "7"
-	else:
-		return make_response(jsonify({'error': 'Possible values swpd, free, buff, cache'}), 404)
+# Y el metodo haga lo siguiente:
+#
+# Si "partition" == "": entonces que entregue en formato JSON todas las 
+# particiones que tiene el sistema. El comando 'df -h' las muestras. El web
+# service deberia entregar algo como:
+# {
+#  "partition": "udev\n/dev/sda1\ntmpfs\n"
+# }
+#
+# Si "partition" == "/dev/sda1": el metodo retornara el espacio usado en dicha
+# particion. Ejemplo:
+#
+# {
+#  "partition": "13%"
+# }
+#
+# Si la partition dada por el usuario no se encuentra entonces enviar un 
+# mensaje de error como corresponde
+#
+# {
+#  "error": "partition not found"
+# } 
+#
+# SU CODIGO AQUI
+#
 
-	output = subprocess.check_output(['cut', '-d', ' ', '-f', value], stdin = tr.stdout)
-	return jsonify({'mem %s' % param: output})
-
+# 
+# +--------------+
+# | EJERCICIO 07 |-+
+# +--------------+ |
+#   +--------------+ 
+#
+# Defina un 'end point' en el cual el usuario puede ejecutar el siguiente comando:
+#
+# curl -X POST -H "Content-type: application/json" -d '{ "processes": valor }' http://localhost:5000/processes
+#
+# Si "valor" == "all": muestra todos los procsos que actualmente corren en el 
+# sistema
+# Si "valor" == "user": donde "user" es un usuario valido entonces devuelve el
+# numero de procesos en ejecucion por ese usuario
+#
+# SU CODIGO AQUI
+#
 
 #
 # Este es el punto donde arranca la ejecucion del programa

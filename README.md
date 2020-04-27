@@ -1,39 +1,21 @@
 # Monitoreo de Servidor via Web Services
 
-Los Web Services que siguen el estilo arquitectural RESTful son bastante populares hoy en día. 
-Muchas de las plataformas centradas en la nube ofrecen este tipo de servicios para que sus usuarios y terceros puedan sacar provecho de la información y los servicios que ellos proveen y gestionan.
+El estilo arquitectural RESTful es una de las arquiecturas de software orientadas a servicios más populares hoy en día. 
+Esto se evidencia, en que muchas de las plataformas centradas en la nube ofrece información y servicios siguiendo este estilo arquitectural.
+El microframework [Flask](https://flask.palletsprojects.com/en/1.1.x/) permite el fácil desarrollo y despliegue de servicios que siguen el esquema arquitectura RESTful.
 
-El microframework Flask permite el fácil desarrollo y despliegue de servicios que siguen el esquema arquitectura RESTful.
-Uno de los elementos centrales de la arquitectura RESTful es la identificación de un recurso para que este se pueda acceder como un *web service*.
-Para efectos de este taller el recuro a modelar es un servidor.
+Aquí no se hará una descripción profunda de lo que son los servicios RESTful pero si se resalta que uno de los elementos centrales de la arquitectura RESTful es la identificación de un recurso que se pueda modelar y acceder como un *web service*.
+Para efectos de este taller el recuro a modelar será un **servidor de cómputo**.
 
-## Información a exponer de parte del servidor
-Para efectos de este taller usted deberá proveer un *web service* que brinde información de un servidor. 
-La información que se desea se presente es la siguiente:
+En el archivo [main.py](main.py) se encuentran todos los ejercicios planteados.
+Dentro del archivo usted encontrará **EJEMPLO**s y encontrará **EJERCICIO**s. 
+Los **EJEMPLO**s le permitirán familiarizarse con la forma en que usted puede programar sus soluciones y en **EJERCICIO**s se encuentran todos los ejercicios que usted debe llevar a cabo. 
+En total son **7** ejercicios planteados.
 
-* Memoria RAM:
-  * ¿Cuánta memoria RAM tiene el sistema?
-  * ¿Cuánta memoria RAM esta usada por el sistema?
+Para este taller usted deberá entregar.
+Su código a través de su correspondiente repositorio de GitHub y debe proveer en:
 
-* Disco:
-  * ¿Cuánto espacio en disco tiene asignado el punto de monte `/`?
-  * ¿Cuánto espacio disponible tiene el punto de monte `/`?
-  * ¿Cuántas particiones tiene montadas este servidor?
-  * ¿Cuánto espacio en disco tiene asignada una partición 'X'?
-  * ¿Cuánto espacio disponible tiene la partición 'X'?
+[ENLACE A VIDEO EN ASCIINEMA.ORG](#link-a-su-video)
 
-* Procesamiento:
-  * ¿Cuántas unidades de procesamiento tiene el servidor?
-  * ¿Cuál es la carga del servidor en el último minuto, últimos cinco minutos, últimos quince minutos?
-  * ¿Cuántos procesos están corriendo en el sistema?
-  * ¿Cuántos usuarios están corriendo procesos en el sistema?
-  * ¿Cuántos procesos el usuario 'X' está corriendo en el sistema?
-
-* Características del servidor:
-  * ¿Qué sistema operativo corre?
-  * ¿Qué arquitectura tiene este computador?
-  * ¿Qué distribución de Linux tiene (nombre y versión)? De no ser Linux, arrojar como respuesta 'Otro sistema'.
-
-* El *web service* deberá permitirle al usuario ejecutar un comando arbitrario. **Si, es un riesgo de seguridad pero esta es una actividad académica.**
-
+Un video en [asciinema](https://asciinema.org) con una duración no superior a 4 minutos donde se muestre la operación de los 7 *end points* o *web services* que llevan a cabo la tarea planteada.
 
