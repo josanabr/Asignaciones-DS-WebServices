@@ -3,15 +3,17 @@
 # El siguiente programa permite obtener, via web services, algunos valores 
 # referentes al estado de un servidor con sistema operativo Linux.
 #  
-# El codigo presenta algunas partes ya codificadas y que le serviran a usted
-# para:
+# El codigo presenta algunas partes ya codificadas y que le serviran a usted:
 #
-# 1- Identificar cuales son las partes del codigo que debe integrar
-# 2- Tener una guia de como desarrollar sus propios web services
+# 1- Probar los servicios que ya estan implementados y verlos en operacion
+# 2- Como guia para desarrollar sus propios web services.
 #
-# NOTA: No usar las funciones 'os.system' o 'os.spawn' ya que son funciones
-# que pueden llevar a vulnerabilidades dentro del codigo.
+# NOTA: Dentro de este codigo se ejecutan algunos comandos de la linea de
+# comandos. IMPORTANTE: No usar las funciones 'os.system' o 'os.spawn' ya que 
+# son funciones que pueden llevar a vulnerabilidades dentro del codigo.
 # REF: https://raspberrypi.stackexchange.com/questions/17017/how-do-i-run-a-command-line-command-in-a-python-script
+#
+# Usar la libreria 'subprocess' de Python.
 #
 # Author: 
 # Date:
@@ -44,6 +46,21 @@ app = Flask(__name__)
 # curl http://localhost:5000/mem/buff
 # curl http://localhost:5000/mem/cache
 #
+# NOTA
+# Observe que para obtener el dato de memoria requerido por el usuario se llevo
+# a cabo la ejecucion del programa 'vmstat'. 'vmstat' ofrece informacion 
+# precisa y en tiempo real del sistema. En este enlace usted podra encontrar mas
+# detalles respecto a la herramienta:
+#
+# https://access.redhat.com/solutions/1160343
+#
+# Lo que se ha hecho con metodos de Python es ejecutar este comando equivalente
+# por la linea de comandos:
+#
+# vmstat | tail -n 1 | tr -s ' ' | cut -d ' ' -f value
+#
+# Donde 'value' puede ser '4', '5', '6' o '7'.
+#
 @app.route('/mem/<string:param>', methods = ['GET'])
 def mem(param):
   if (param == "swpd"):
@@ -57,7 +74,7 @@ def mem(param):
   else:
     return make_response(jsonify({'error': 'Possible values swpd, free, buff, cache'}), 404)
   vmstat = subprocess.Popen(['vmstat'], stdout = subprocess.PIPE)
-  tail = subprocess.Popen(['tail','-n','+3'], stdin = vmstat.stdout, stdout = subprocess.PIPE)
+  tail = subprocess.Popen(['tail','-n','1'], stdin = vmstat.stdout, stdout = subprocess.PIPE)
   tr = subprocess.Popen(['tr', '-s', ' '], stdin = tail.stdout, stdout = subprocess.PIPE)
   
   output = subprocess.check_output(['cut', '-d', ' ', '-f', value], stdin = tr.stdout)
@@ -69,9 +86,9 @@ def mem(param):
 # +------------+ |
 #   +------------+ 
 #
-# El mismo metodo anterior pero usando el metodo 'POST' del protocolo HTTP
+# El mismo metodo anterior pero usando el metodo 'POST' del protocolo HTTP.
 #
-# Para probar este comando se puede invocar el siguiente comando:
+# Para probar este 'end point'  se puede invocar el siguiente comando:
 #
 # curl -X POST -H "Content-type: application/json" -d '{"mem": "cache" }' http://localhost:5000/mem
 #
@@ -87,9 +104,9 @@ def memp():
 # +------------+ |
 #   +------------+ 
 #
-# Este metodo se usa para determinar que personas estan conectadas usando el 
-# comando 'who'. Si usted no sabe como funciona el comando 'who', por favor
-# abra una terminal y ejecute 'who'.
+# Este metodo se usa para determinar que personas estan conectadas a un servidor
+# usando el comando 'who'. Si usted no sabe como funciona el comando 'who', por 
+# favor abra una terminal y ejecute 'who'.
 #
 # Este codigo muestra como en Python se puede acceder al resultado de ejecutar
 # el comando 'who' y presentar el resultado en formato 'json'.
@@ -175,7 +192,7 @@ def os():
 def index():
   #
   # Almacene en una variable llamada 'output' un mensaje que describa 
-  # todos los web services definidos en este programa
+  # todos los 'web services' o 'end points' definidos en este programa
   #
   return jsonify({'available services': output})
 
@@ -219,12 +236,12 @@ def whou(user):
 # Desarrolle la version 'POST' del comando anterior. Es decir, que el web 
 # service responda ante un comando como el siguiente:
 #
-# curl -X POST -H "Content-type: application/json" -d '{ "user": "john" }' \ 
-# http://localhost:5000/who
+# curl -X POST -H "Content-type: application/json" -d '{ "user": "john" }' http://localhost:5000/who
 #
 # y determine si el usuario esta o no en el sistema
 #
-# RESTRICCION: Debe usar el metodo 'whou' del punto anterior en su implementacion
+# RESTRICCION: Debe usar el metodo 'whou' del punto anterior en esta 
+# implementacion
 #
 # SU CODIGO AQUI
 #
@@ -317,7 +334,8 @@ def cpuwa(param):
 #   "kernel": "Linux\n"
 # }
 #
-# Si la caracteristica indicada no se encuentra disponible 
+# Si la caracteristica indicada no se encuentra disponible presente el 
+# correspondiente mensaje de error
 #
 # SU CODIGO AQUI
 
@@ -342,7 +360,7 @@ def cpuwa(param):
 #  "partition": "udev\n/dev/sda1\ntmpfs\n"
 # }
 #
-# Si "partition" == "/dev/sda1": el metodo retornara el espacio usado en dicha
+# Si "partition" == "/dev/sda1": el metodo retornara el espacio ocupado en dicha
 # particion. Ejemplo:
 #
 # {
